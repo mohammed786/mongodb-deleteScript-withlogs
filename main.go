@@ -8,6 +8,7 @@ import (
 	_logger "userprofile-delete-script/logger"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -42,14 +43,33 @@ func main() {
 	defer client.Disconnect(ctx)
 	database := client.Database(config.DatabaseName)
 	collection := database.Collection(config.CollectionName)
+
+	// ** This is Regex Query
+	deleteRecords(ctx, collection, logger, "Email.Value", "test\\w*", true, nil)
+
+	// ** This is simple Query
 	filter := bson.M{
 		"CreatedDate": bson.M{"$lt": time.Now().AddDate(-1, 0, 0)},
 	}
-	deleteRecords(ctx, collection, filter, logger)
+	deleteRecords(ctx, collection, logger, "", "", false, &filter)
 }
 
-func deleteRecords(ctx context.Context, collection *mongo.Collection, filter bson.M, logger _logger.Logger) {
-	result, err := collection.Find(ctx, filter)
+func deleteRecords(ctx context.Context, collection *mongo.Collection, logger _logger.Logger, key string, value string, isRegex bool, query *bson.M) {
+	var filter bson.D
+	if isRegex {
+		filter = bson.D{
+			{Key: key, Value: bson.D{
+				{"$regex", primitive.Regex{Pattern: value}},
+			}},
+		}
+	}
+	var result *mongo.Cursor
+	var err error
+	if query != nil {
+		result, err = collection.Find(ctx, query)
+	} else {
+		result, err = collection.Find(ctx, filter)
+	}
 	if err != nil {
 		logger.Fatal(err)
 	}
