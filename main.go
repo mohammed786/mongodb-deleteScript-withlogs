@@ -45,11 +45,29 @@ func main() {
 	collection := database.Collection(config.CollectionName)
 
 	// ** This is Regex Query
-	deleteRecords(ctx, collection, logger, "Email.Value", "test\\w*", true, nil)
+	// deleteRecords(ctx, collection, logger, "Email.Value", "test\\w*", true, nil)
 
-	// ** This is simple Query
+	// ** This query check the cyrilic charcter
+	fromTimeStr := "2019-12-23 10:26:34" // Date is YYYY-MM-DD HH:MM:SS fomat
+	toTimeStr := "2021-12-31 07:17:11"   // Date is YYYY-MM-DD HH:MM:SS fomat
+	toTime, err := time.Parse("2006-01-02 03:04:05", toTimeStr)
+	if err != nil {
+		logger.Error(err)
+	}
+	fromTime, err := time.Parse("2006-01-02 03:04:05", fromTimeStr)
+	if err != nil {
+		logger.Error(err)
+	}
 	filter := bson.M{
-		"CreatedDate": bson.M{"$lt": time.Now().AddDate(-1, 0, 0)},
+		// "CreatedDate": bson.M{"$lt": time.Now().AddDate(-1, 0, 0)},
+		"CreatedDate": bson.M{"$gt": fromTime, "$lt": toTime},
+		"$or": []bson.M{{"FirstName": bson.D{
+			{"$regex", primitive.Regex{Pattern: "[\\p{Cyrillic}\\d]+"}}, // This regex is used to check the Cyrillic letter
+		}},
+			{"Fullname": bson.D{
+				{"$regex", primitive.Regex{Pattern: "[\\p{Cyrillic}\\d]+"}},
+			}},
+		},
 	}
 	deleteRecords(ctx, collection, logger, "", "", false, &filter)
 }
