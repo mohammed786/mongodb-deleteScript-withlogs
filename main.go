@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 	_config "userprofile-delete-script/config"
 	"userprofile-delete-script/logger"
@@ -82,6 +83,7 @@ func main() {
 		// "CreatedDate": bson.M{"$lt": time.Now().AddDate(-1, 0, 0)},
 		"IsActive":     true,
 		"Pages.Status": bson.M{"$type": 2},
+		"AppID":        3915,
 	}
 	deleteRecords(ctx, collection, logger, "", "", false, &updateFilter)
 }
@@ -124,6 +126,30 @@ func deleteRecords(ctx context.Context, collection *mongo.Collection, logger _lo
 			logger.Error(err)
 		} else {
 			logger.Info(elem)
+		}
+		var val string
+		if strings.Contains(elem.Pages[0].Status, "1") {
+			val = "0"
+			if strings.Contains(elem.Pages[0].Status, "9") {
+				val = "09"
+			}
+		}
+		if strings.Contains(elem.Pages[0].Status, "0") {
+			val = "1"
+			if strings.Contains(elem.Pages[0].Status, "9") {
+				val = "19"
+			}
+		}
+		if len(val) != 0 {
+			logger.Info("Updating the val", val)
+			update := bson.M{
+				"$set": bson.M{
+					"Pages.$[].Status": val,
+				},
+			}
+			if _, err := collection.UpdateOne(ctx, query, update); err != nil {
+				logger.Error(err)
+			}
 		}
 		i++
 	}
