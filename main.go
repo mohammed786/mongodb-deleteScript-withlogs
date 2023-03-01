@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 	_config "userprofile-delete-script/config"
 	"userprofile-delete-script/logger"
@@ -19,7 +20,13 @@ type LogEntry struct {
 	Uid         string    `bson:"Uid"`
 	Email       []Email   `bson:"Email" json:"Email"`
 }
-
+type ThemeEntry struct {
+	AppId int    `bson:"AppID"`
+	Pages []Page `bson:"Pages"`
+}
+type Page struct {
+	Status string `bson:"Status"`
+}
 type Email struct {
 	Type  string `bson:"Type" json:"Type"`
 	Value string `bson:"Value" json:"Value"`
@@ -48,28 +55,35 @@ func main() {
 	// deleteRecords(ctx, collection, logger, "Email.Value", "test\\w*", true, nil)
 
 	// ** This query check the cyrilic charcter
-	fromTimeStr := "2019-12-23 10:26:34" // Date is YYYY-MM-DD HH:MM:SS fomat
-	toTimeStr := "2021-12-31 07:17:11"   // Date is YYYY-MM-DD HH:MM:SS fomat
-	toTime, err := time.Parse("2006-01-02 03:04:05", toTimeStr)
-	if err != nil {
-		logger.Error(err)
-	}
-	fromTime, err := time.Parse("2006-01-02 03:04:05", fromTimeStr)
-	if err != nil {
-		logger.Error(err)
-	}
-	filter := bson.M{
+	// fromTimeStr := "2019-12-23 10:26:34" // Date is YYYY-MM-DD HH:MM:SS fomat
+	// toTimeStr := "2021-12-31 07:17:11"   // Date is YYYY-MM-DD HH:MM:SS fomat
+	// toTime, err := time.Parse("2006-01-02 03:04:05", toTimeStr)
+	// if err != nil {
+	// 	logger.Error(err)
+	// }
+	// fromTime, err := time.Parse("2006-01-02 03:04:05", fromTimeStr)
+	// if err != nil {
+	// 	logger.Error(err)
+	// }
+	// filter := bson.M{
+	// 	// "CreatedDate": bson.M{"$lt": time.Now().AddDate(-1, 0, 0)},
+	// 	"CreatedDate": bson.M{"$gt": fromTime, "$lt": toTime},
+	// 	"$or": []bson.M{{"FirstName": bson.D{
+	// 		{"$regex", primitive.Regex{Pattern: "[\\p{Cyrillic}\\d]+"}}, // This regex is used to check the Cyrillic letter
+	// 	}},
+	// 		{"Fullname": bson.D{
+	// 			{"$regex", primitive.Regex{Pattern: "[\\p{Cyrillic}\\d]+"}},
+	// 		}},
+	// 	},
+	// }
+	// deleteRecords(ctx, collection, logger, "", "", false, &filter)
+
+	updateFilter := bson.M{
 		// "CreatedDate": bson.M{"$lt": time.Now().AddDate(-1, 0, 0)},
-		"CreatedDate": bson.M{"$gt": fromTime, "$lt": toTime},
-		"$or": []bson.M{{"FirstName": bson.D{
-			{"$regex", primitive.Regex{Pattern: "[\\p{Cyrillic}\\d]+"}}, // This regex is used to check the Cyrillic letter
-		}},
-			{"Fullname": bson.D{
-				{"$regex", primitive.Regex{Pattern: "[\\p{Cyrillic}\\d]+"}},
-			}},
-		},
+		"IsActive":     true,
+		"Pages.Status": bson.M{"$type": 2},
 	}
-	deleteRecords(ctx, collection, logger, "", "", false, &filter)
+	deleteRecords(ctx, collection, logger, "", "", false, &updateFilter)
 }
 
 func deleteRecords(ctx context.Context, collection *mongo.Collection, logger _logger.Logger, key string, value string, isRegex bool, query *bson.M) {
@@ -91,14 +105,27 @@ func deleteRecords(ctx context.Context, collection *mongo.Collection, logger _lo
 	if err != nil {
 		logger.Fatal(err)
 	}
+	count := 10
+	i := 0
 	for result.Next(ctx) {
-		var elem LogEntry
+		if i == count {
+			var w1 string
+			fmt.Println("Wish to see more records? (press y else n)")
+			_, err := fmt.Scanln(&w1)
+			if err == nil && w1 == "y" {
+				i = 0
+			} else {
+				break
+			}
+		}
+		var elem ThemeEntry
 		err = result.Decode(&elem)
 		if err != nil {
 			logger.Error(err)
 		} else {
 			logger.Info(elem)
 		}
+		i++
 	}
 	// Delete records
 	/***
