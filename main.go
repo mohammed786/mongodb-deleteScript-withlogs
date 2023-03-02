@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 	_config "userprofile-delete-script/config"
 	"userprofile-delete-script/logger"
@@ -113,30 +114,40 @@ func deleteRecords(ctx context.Context, collection *mongo.Collection, logger _lo
 		} else {
 			logger.Info(elem)
 		}
-		// var val string
-		// if strings.Contains(elem.Pages[0].Status, "1") {
-		// 	val = "0"
-		// 	if strings.Contains(elem.Pages[0].Status, "9") {
-		// 		val = "09"
-		// 	}
-		// }
-		// if strings.Contains(elem.Pages[0].Status, "0") {
-		// 	val = "1"
-		// 	if strings.Contains(elem.Pages[0].Status, "9") {
-		// 		val = "19"
-		// 	}
-		// }
-		// if len(val) != 0 {
-		// 	logger.Info("Updating the val", val)
-		// 	update := bson.M{
-		// 		"$set": bson.M{
-		// 			"Pages.$[].Status": val,
-		// 		},
-		// 	}
-		// 	if _, err := collection.UpdateOne(ctx, query, update); err != nil {
-		// 		logger.Error(err)
-		// 	}
-		// }
+		var val string
+		if strings.Contains(elem.Pages[0].Status, "1") {
+			val = "0"
+			if strings.Contains(elem.Pages[0].Status, "9") {
+				val = "09"
+			}
+		}
+		if strings.Contains(elem.Pages[0].Status, "0") {
+			val = "1"
+			if strings.Contains(elem.Pages[0].Status, "9") {
+				val = "19"
+			}
+		}
+		if len(val) != 0 {
+			logger.Info("Updating the val", val)
+			query := bson.M{
+				"AppID": elem.AppId,
+			}
+			update := bson.M{
+				"$set": bson.M{
+					"Pages.$[].Status": val,
+				},
+			}
+			var w1 string
+			fmt.Println("Wish to see more records? (press y else n)")
+			_, err := fmt.Scanln(&w1)
+			if err == nil && w1 == "y" {
+				if _, err := collection.UpdateOne(ctx, query, update); err != nil {
+					logger.Error(err)
+				}
+			}
+
+			break
+		}
 		i++
 	}
 	// Delete records
