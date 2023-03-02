@@ -41,7 +41,7 @@ func main() {
 		logger.Fatal(err)
 	}
 	logger.Info("Mongo Client created")
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx := context.Background()
 	err = client.Connect(ctx)
 	if err != nil {
 		logger.Fatal(err)
@@ -128,7 +128,6 @@ func deleteRecords(ctx context.Context, collection *mongo.Collection, logger _lo
 			}
 		}
 		if len(val) != 0 {
-			logger.Info("Updating the val", val)
 			query := bson.M{
 				"AppID": elem.AppId,
 			}
@@ -138,14 +137,13 @@ func deleteRecords(ctx context.Context, collection *mongo.Collection, logger _lo
 				},
 			}
 			var w1 string
-			fmt.Println("Wish to see more records? (press y else n)")
+			fmt.Println("Updating the val ((press y else n))", val, elem.AppId)
 			_, err := fmt.Scanln(&w1)
 			if err == nil && w1 == "y" {
 				if _, err := collection.UpdateOne(ctx, query, update); err != nil {
 					logger.Error(err)
 				}
 			}
-
 			break
 		}
 		i++
