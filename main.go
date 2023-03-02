@@ -3,14 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 	_config "userprofile-delete-script/config"
 	"userprofile-delete-script/logger"
 	_logger "userprofile-delete-script/logger"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -83,27 +81,15 @@ func main() {
 		// "CreatedDate": bson.M{"$lt": time.Now().AddDate(-1, 0, 0)},
 		"IsActive":     true,
 		"Pages.Status": bson.M{"$type": 2},
-		"AppID":        3915,
+		// "AppID":        4498,
 	}
 	deleteRecords(ctx, collection, logger, "", "", false, &updateFilter)
 }
 
 func deleteRecords(ctx context.Context, collection *mongo.Collection, logger _logger.Logger, key string, value string, isRegex bool, query *bson.M) {
-	var filter bson.D
-	if isRegex {
-		filter = bson.D{
-			{Key: key, Value: bson.D{
-				{"$regex", primitive.Regex{Pattern: value}},
-			}},
-		}
-	}
 	var result *mongo.Cursor
 	var err error
-	if query != nil {
-		result, err = collection.Find(ctx, query)
-	} else {
-		result, err = collection.Find(ctx, filter)
-	}
+	result, err = collection.Find(ctx, query)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -127,30 +113,30 @@ func deleteRecords(ctx context.Context, collection *mongo.Collection, logger _lo
 		} else {
 			logger.Info(elem)
 		}
-		var val string
-		if strings.Contains(elem.Pages[0].Status, "1") {
-			val = "0"
-			if strings.Contains(elem.Pages[0].Status, "9") {
-				val = "09"
-			}
-		}
-		if strings.Contains(elem.Pages[0].Status, "0") {
-			val = "1"
-			if strings.Contains(elem.Pages[0].Status, "9") {
-				val = "19"
-			}
-		}
-		if len(val) != 0 {
-			logger.Info("Updating the val", val)
-			update := bson.M{
-				"$set": bson.M{
-					"Pages.$[].Status": val,
-				},
-			}
-			if _, err := collection.UpdateOne(ctx, query, update); err != nil {
-				logger.Error(err)
-			}
-		}
+		// var val string
+		// if strings.Contains(elem.Pages[0].Status, "1") {
+		// 	val = "0"
+		// 	if strings.Contains(elem.Pages[0].Status, "9") {
+		// 		val = "09"
+		// 	}
+		// }
+		// if strings.Contains(elem.Pages[0].Status, "0") {
+		// 	val = "1"
+		// 	if strings.Contains(elem.Pages[0].Status, "9") {
+		// 		val = "19"
+		// 	}
+		// }
+		// if len(val) != 0 {
+		// 	logger.Info("Updating the val", val)
+		// 	update := bson.M{
+		// 		"$set": bson.M{
+		// 			"Pages.$[].Status": val,
+		// 		},
+		// 	}
+		// 	if _, err := collection.UpdateOne(ctx, query, update); err != nil {
+		// 		logger.Error(err)
+		// 	}
+		// }
 		i++
 	}
 	// Delete records
